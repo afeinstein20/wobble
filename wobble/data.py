@@ -682,4 +682,69 @@ class Spectrum(object):
             self.continuum_normalize()
             self.mask_high_pixels()     
         
+
+    def from_GRACES(self, filename, process=True, waves=None, spec=None, ordrs=None, errs=None,
+                    ra=None, dec=None):
+        """
         
+        Note: these files must all be located in the same directory. 
+
+        Parameters
+        ----------
+        filename : string
+            Location of the blue chip spectrum to be read.
+        process : bool, optional (default `True`)   
+            If `True`, do some data processing, including masking of low-SNR
+            regions and strong outliers; continuum normalization; and 
+            transformation to ln(wavelength) and ln(flux). 
+        """
+        from astropy.time import Time
+        from astropy import units as u
+        from astropy.coordinates import SkyCoord, EarthLocation
+
+        if not self.empty:
+            print("WARNING: overwriting existing contents.")
+        
+        keck = EarthLocation.from_geodetic(lat=19.8283*u.deg,
+                                           lon=-155.4783*u.deg, height=4160*u.m)
+
+        R = [23, 56] # orders
+
+        metadata = {}
+        metadata['filelist'] = filename
+        with fits.open(filename) as sp:
+            metadata['dates'] = Time(float(sp[0].header['MJDATE']), format='mjd').jd
+            metadata['airms'] = float(sp[0].header['AIRMASS'])
+
+            if ra is None:
+                ra = sp[0].header['RA']
+            if dec is None:
+                dec = sp[0].header['DEC']
+
+            obj_coords = SkyCoord(ra, dec, unit=u.deg)
+            barycorr = obj_coords.radial_velocity_correction('heliocentric',
+                                                             obstime=Time(metadata['dates'], format='jd'),
+                                                             location=keck)
+            metadata['bervs'] = barycorr.to(u.m/u.s).value
+
+            if spec is None:
+                spec = np.copy(sp[0].data[10])
+            if errs is None:
+                errs = np.copy(sp[0].data[11])
+            if waves is None:
+                waves = np.copy(sp[0].data[4])
+            if ordrs is None:
+                ordrs = np.copy(sp[0].data[0])
+            
+        xs = [waves[ordrs==r] for r in np.unique(ordrs)]
+        ys = [spec[ordrs==r]  for r in np.unique(ordrs)]
+
+        ivars = [1./errs[ordrs==r] for r in np.unique(ordrs)]
+        self.populate(xs, ys, ivars, **metadata)
+
+        if process:
+#            self.mask_low_pixels()
+            self.mask_bad_edges()
+            self.transform_log()
+            self.continuum_normalize()
+            self.mask_high_pixels()
