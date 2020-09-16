@@ -18,7 +18,7 @@ else:
     link_flags = tf.sysconfig.get_link_flags()
     compile_flags += ["-std=c++11"]
     if sys.platform == "darwin":
-        compile_flags += ["-mmacosx-version-min=10.9"]
+        compile_flags += ["-mmacosx-version-min=10.14"]
 
     extensions = [
         Extension(
@@ -28,7 +28,7 @@ else:
                 "wobble/interp/interp_rev_op.cc",
             ],
             include_dirs=["wobble/interp"],
-            language="c++",
+            language="c",
             extra_compile_args=compile_flags,
             extra_link_args=link_flags,
         ),
