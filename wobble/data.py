@@ -705,8 +705,8 @@ class Spectrum(object):
         if not self.empty:
             print("WARNING: overwriting existing contents.")
         
-        keck = EarthLocation.from_geodetic(lat=19.8283*u.deg,
-                                           lon=-155.4783*u.deg, height=4160*u.m)
+        geminiN = EarthLocation.from_geodetic(lat=19.8283*u.deg,
+                                              lon=-155.4689*u.deg, height=4139*u.m)
 
         R = [23, 56] # orders
 
@@ -722,9 +722,9 @@ class Spectrum(object):
                 dec = sp[0].header['DEC']
 
             obj_coords = SkyCoord(ra, dec, unit=u.deg)
-            barycorr = obj_coords.radial_velocity_correction('heliocentric',
+            barycorr = obj_coords.radial_velocity_correction('barycentric',
                                                              obstime=Time(metadata['dates'], format='jd'),
-                                                             location=keck)
+                                                             location=geminiN)
             metadata['bervs'] = barycorr.to(u.m/u.s).value
 
             if spec is None:
